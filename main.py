@@ -3,11 +3,17 @@
 
 class LanguageModel:
 
+    ## Unigram variables
     unigramDict = {}
     unigramWithUnk = {}
     testDict = {}
-    bigramDict = {}
-    trigramDict = {}
+
+    ## Bigram variables
+    bigram_training = {}
+    bigram_test = {}
+
+
+    ## Test training data num of tokens
     num_of_tokens = 0
 
     
@@ -20,19 +26,30 @@ class LanguageModel:
         self.create_unigram_with_unk()
 
         ## Answer to Question 1
-        print('# of unique tokens in the training corpus (including </s> and <unk>) ', len(self.unigramDict)+1)
+        print('Question 1:')
+        #print('# of unique tokens in the training corpus (including </s> and <unk>) ', len(self.unigramDict)+1)
         #print('# of <s> in unigramDict ', self.unigramDict['<s>'])
-        print('# of unique tokens in the training corpus (replaced single instance words with <unk>)', len(self.unigramWithUnk))
+        print('# of unique tokens in the training corpus (replaced single instance words with <unk>)', len(self.unigramWithUnk)+1)
         #print('# of <s> in unigramWithUnk', self.unigramWithUnk['<s>'])
 
         ## Answer to Question 2
+        print("Question 2:")
         #num_of_tokens = self.get_num_of_tokens()
         print('# of tokens in the training corpus not including <s>', self.num_of_tokens)
 
         ## Preprocessing for test
         # self.preprocessing_step1_2_test()
         self.create_test_dict()
-        #tokens_not_found, types_not_found = self.percentages_not_found()
+        print("Question 3:")
+        #print('# of unique tokens in the test corpus (including </s> and <unk>) ', len(self.testDict)+1)
+        tokens_not_found, types_not_found = self.percentages_not_found()
+        print("Percent of missing tokens", tokens_not_found * 100)
+        print("Percent of missing word types", types_not_found * 100)
+
+        print("Questio 4:")
+
+
+        
 
 
     def preprocessing_step1_2(self):
@@ -116,11 +133,43 @@ class LanguageModel:
                     w.write('</s>\n')
 
     def create_test_dict(self):
-        pass
+        ## Reads from the preprocessed test file and populates the testDict variable
+        with open('./testPreprocessed.txt', 'r') as f:
+            for line in f:
+                tokens = line.split()
+                for token in tokens:
+                    if (token == '<s>'):
+                        continue
+                    try:
+                        self.testDict[token]+=1
+                    except KeyError:
+                        self.testDict[token]=1
+                    ## If the token is <s> we dont want to count it as num of tokens
+                    # if (token == '<s>'):
+                    #     continue
+                    self.num_of_tokens+=1
 
     def percentages_not_found(self):
-        pass
+        ## What percentage of tokens and word types did not occur in the training data
+        num_of_tokens_not_found=0
+        total_tokens=0
+        total_types=0
+        num_of_types_not_found=0
+        for token in self.testDict:
+            if token == '<s>': 
+                continue
+            total_tokens+=self.testDict[token]
+            total_types+=1
+            if token in self.unigramDict:
+                continue
+            num_of_tokens_not_found+=self.testDict[token]
+            num_of_types_not_found+=1
+        return [num_of_tokens_not_found/total_tokens, num_of_types_not_found/total_types]
 
+    def train_bigrams(self):
+        ## Training bigram
+        with open('./trainUnk.txt', 'r') as f:
+            
 
 
 if __name__ == "__main__":
