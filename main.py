@@ -91,7 +91,7 @@ class LanguageModel:
     def preprocessing_step1_2(self):
         # Lowercase all words in the training and test corpuses
         # Add <s> and </s> to the sentenses
-        with open('train-Spring2022.txt', 'r', encoding='utf8') as f:
+        with open('./train-Spring2022.txt', 'r', encoding='utf8') as f:
             with open('trainPreprocessed.txt', 'w', encoding='utf8') as w:
                 for line in f:
                     # Get all the words, set them to lowercase
