@@ -15,9 +15,14 @@ class LanguageModel:
     bigram_training = {}
     bigram_test = {}
 
-    # Test training data num of tokens
+    # Counters for different training data
+    # including <s>
     total_num_of_tokens = 0
+    # of <s> since we dont include it in the unigram model
+    num_of_start = 0
+    # not including <s>
     num_of_tokens = 0
+    # num of tokens in training data with <unk> (should be same as num_of_tokens)
     num_of_tokens_unk = 0
 
     def __init__(self):
@@ -40,7 +45,7 @@ class LanguageModel:
         print("Question 2:")
         #num_of_tokens = self.get_num_of_tokens()
         print('# of tokens in the training corpus not including <s>',
-              self.num_of_tokens, self.total_num_of_tokens)
+              self.num_of_tokens)
 
         # Preprocessing for test
         self.preprocessing_step1_2_test()
@@ -59,14 +64,15 @@ class LanguageModel:
               bigram_tokens_not_found * 100)
         print("Percent of missing bigram types", bigram_types_not_found * 100)
 
-        print("Question 5:")
+        print("Question 5:\nUnigram:")
         self.log_probability_unigram()
-        print(self.get_num_of_tokens())
+        print("Bigram:")
+        self.log_probability_bigram()
 
     def preprocessing_step1_2(self):
         # Lowercase all words in the training and test corpuses
         # Add <s> and </s> to the sentenses
-        with open('./train-Spring2022.txt', 'r', encoding='utf8') as f:
+        with open('train-Spring2022.txt', 'r', encoding='utf8') as f:
             with open('trainPreprocessed.txt', 'w', encoding='utf8') as w:
                 for line in f:
                     # Get all the words, set them to lowercase
@@ -80,8 +86,8 @@ class LanguageModel:
 
     def preprocessing_step3(self):
         # Take the file from trainPreprocessed
-        with open('./trainPreprocessed.txt', 'r', encoding='utf8') as f:
-            with open('./trainUnk.txt', 'w', encoding='utf8') as w:
+        with open('trainPreprocessed.txt', 'r', encoding='utf8') as f:
+            with open('trainUnk.txt', 'w', encoding='utf8') as w:
                 for line in f:
                     tokens = line.split()
                     for token in tokens:
@@ -97,12 +103,13 @@ class LanguageModel:
 
     def create_unigram(self):
         # Reads from the preprocessed Training file and populates the unigramDict variable
-        with open('./trainPreprocessed.txt', 'r', encoding='utf8') as f:
+        with open('trainPreprocessed.txt', 'r', encoding='utf8') as f:
             for line in f:
                 tokens = line.split()
                 for token in tokens:
                     if (token == '<s>'):
                         self.total_num_of_tokens += 1
+                        self.num_of_start += 1
                         continue
                     try:
                         self.unigramDict[token] += 1
@@ -113,7 +120,7 @@ class LanguageModel:
                     self.total_num_of_tokens += 1
 
     def create_unigram_with_unk(self):
-        with open('./trainUnk.txt', 'r', encoding='utf8') as f:
+        with open('trainUnk.txt', 'r', encoding='utf8') as f:
             for line in f:
                 tokens = line.split()
                 for token in tokens:
@@ -125,23 +132,23 @@ class LanguageModel:
                         self.unigramWithUnk[token] = 1
                     self.num_of_tokens_unk += 1
 
-    def get_num_of_tokens(self):
-        num_of_tokens = 0
-        num_of_tokens_unk = 0
-        for token in self.unigramDict:
-            if token == '<s>':
-                continue
-            num_of_tokens += self.unigramDict[token]
-        for token in self.unigramWithUnk:
-            if token == '<s>':
-                continue
-            num_of_tokens_unk += self.unigramWithUnk[token]
-        return [num_of_tokens, num_of_tokens_unk]
+    # def get_num_of_tokens(self):
+    #     num_of_tokens = 0
+    #     num_of_tokens_unk = 0
+    #     for token in self.unigramDict:
+    #         if token == '<s>':
+    #             continue
+    #         num_of_tokens += self.unigramDict[token]
+    #     for token in self.unigramWithUnk:
+    #         if token == '<s>':
+    #             continue
+    #         num_of_tokens_unk += self.unigramWithUnk[token]
+    #     return [num_of_tokens, num_of_tokens_unk]
 
     def preprocessing_step1_2_test(self):
         # Lowercase all words in the training and test corpuses
         # Add <s> and </s> to the sentenses
-        with open('./test.txt', 'r', encoding='utf8') as f:
+        with open('test.txt', 'r', encoding='utf8') as f:
             with open('testPreprocessed.txt', 'w', encoding='utf8') as w:
                 for line in f:
                     # Get all the words, set them to lowercase
@@ -154,7 +161,7 @@ class LanguageModel:
                     w.write('</s>\n')
 
     def preprocessing_step3_test(self):
-        with open('./test.txt', 'r', encoding='utf8') as f:
+        with open('test.txt', 'r', encoding='utf8') as f:
             with open('testUnk.txt', 'w', encoding='utf8') as w:
                 for line in f:
                     # Get all the words, set them to lowercase
@@ -171,7 +178,7 @@ class LanguageModel:
 
     def create_test_dict(self):
         # Reads from the preprocessed test file and populates the testDict variable
-        with open('./testPreprocessed.txt', 'r', encoding='utf8') as f:
+        with open('testPreprocessed.txt', 'r', encoding='utf8') as f:
             for line in f:
                 tokens = line.split()
                 for token in tokens:
@@ -201,7 +208,7 @@ class LanguageModel:
 
     def train_bigrams(self):
         # Training bigram
-        with open('./trainUnk.txt', 'r', encoding='utf8') as f:
+        with open('trainUnk.txt', 'r', encoding='utf8') as f:
             for line in f:
                 tokens = line.split()
                 # For all tokens starting after <s>
@@ -212,7 +219,7 @@ class LanguageModel:
                     except KeyError:
                         self.bigram_training[s] = 1
         # Testing bigram
-        with open('./testUnk.txt', 'r', encoding='utf8') as f:
+        with open('testUnk.txt', 'r', encoding='utf8') as f:
             for line in f:
                 tokens = line.split()
                 # For all tokens starting after <s>
@@ -241,7 +248,10 @@ class LanguageModel:
     def log_probability_unigram(self):
         # P(i) = c(i)/c(total)
         # I look forward to hearing your reply
-        p_i = math.log(self.unigramWithUnk['i'] / self.num_of_tokens, 2)
+        try:
+            p_i = math.log(self.unigramWithUnk['i'] / self.num_of_tokens, 2)
+        except KeyError:
+            p_i = 0
         p_look = math.log(
             self.unigramWithUnk['look'] / self.num_of_tokens, 2)
         p_forward = math.log(
@@ -267,6 +277,66 @@ class LanguageModel:
         print("Log p(reply)", p_reply)
         print("Log p(.)", p_dot)
         print("Log p(</s>)", p_stop)
+        print("The log probability of this unigram is", p_i+p_look +
+              p_forward+p_to+p_hearing+p_your+p_reply+p_dot+p_stop)
+
+    def log_probability_bigram(self):
+        # I look forward to hearing your reply
+        try:
+            p_s_i = math.log(
+                self.bigram_training['<s> i'] / self.num_of_start, 2)
+        except KeyError:
+            p_s_i = 0
+        try:
+            p_i_look = math.log(
+                self.bigram_training['i look'] / self.unigramWithUnk['i'], 2)
+        except KeyError:
+            p_i_look = 0
+        try:
+            p_look_forward = math.log(
+                self.bigram_training['look forward'] / self.unigramWithUnk['look'], 2)
+        except KeyError:
+            p_look_forward = 0
+        try:
+            p_forward_to = math.log(
+                self.bigram_training['forward to'] / self.unigramWithUnk['forward'], 2)
+        except KeyError:
+            p_forward_to = 0
+        try:
+            p_to_hearing = math.log(
+                self.bigram_training['to hearing'] / self.unigramWithUnk['to'], 2)
+        except KeyError:
+            p_to_hearing = 0
+        try:
+            p_hearing_your = math.log(
+                self.bigram_training['hearing your'] / self.unigramWithUnk['hearing'], 2)
+        except KeyError:
+            p_hearing_your = 0
+        try:
+            p_your_reply = math.log(
+                self.bigram_training['your reply'] / self.unigramWithUnk['your'], 2)
+        except KeyError:
+            p_your_reply = 0
+        try:
+            p_reply_dot = math.log(
+                self.bigram_training['reply .'] / self.unigramWithUnk['reply'], 2)
+        except KeyError:
+            p_reply_dot = 0
+        try:
+            p_dot_stop = math.log(
+                self.bigram_training['. </s>'] / self.unigramWithUnk['.'], 2)
+        except KeyError:
+            p_dot_stop = 0
+        print("Log p(i | <s>)", p_s_i)
+        print("Log p(look | i)", p_i_look)
+        print("Log p(forward | look)", p_look_forward)
+        print("Log p(to | forward)", p_forward_to)
+        print("Log p(hearing | to)", p_to_hearing)
+        print("Log p(your | hearing)", p_hearing_your)
+        print("Log p(reply | your)", p_your_reply)
+        print("Log p(. | reply)", p_reply_dot)
+        print("Log p(</s> | .)", p_dot_stop)
+        print("Log probability of this bigram is undefined")
 
 
 if __name__ == "__main__":
