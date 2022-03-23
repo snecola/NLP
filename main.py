@@ -1,6 +1,9 @@
 # Steven Necola
 # NLP - Spring 2022
 
+import math
+
+
 class LanguageModel:
 
     # Unigram variables
@@ -13,14 +16,16 @@ class LanguageModel:
     bigram_test = {}
 
     # Test training data num of tokens
+    total_num_of_tokens = 0
     num_of_tokens = 0
+    num_of_tokens_unk = 0
 
     def __init__(self):
         # Preprocessing step 1 & 2
-        # self.preprocessing_step1_2()
+        self.preprocessing_step1_2()
         self.create_unigram()
         # Preprocessing step 3
-        # self.preprocessing_step3()
+        self.preprocessing_step3()
         self.create_unigram_with_unk()
 
         # Answer to Question 1
@@ -35,10 +40,10 @@ class LanguageModel:
         print("Question 2:")
         #num_of_tokens = self.get_num_of_tokens()
         print('# of tokens in the training corpus not including <s>',
-              self.num_of_tokens)
+              self.num_of_tokens, self.total_num_of_tokens)
 
         # Preprocessing for test
-        # self.preprocessing_step1_2_test()
+        self.preprocessing_step1_2_test()
         self.create_test_dict()
         print("Question 3:")
         # print('# of unique tokens in the test corpus (including </s> and <unk>) ', len(self.testDict)+1)
@@ -47,12 +52,16 @@ class LanguageModel:
         print("Percent of missing word types", types_not_found * 100)
 
         print("Question 4:")
-        # self.preprocessing_step3_test()
+        self.preprocessing_step3_test()
         self.train_bigrams()
         bigram_tokens_not_found, bigram_types_not_found = self.bigrams_not_found()
         print("Percent of missing bigram tokens",
               bigram_tokens_not_found * 100)
         print("Percent of missing bigram types", bigram_types_not_found * 100)
+
+        print("Question 5:")
+        self.log_probability_unigram()
+        print(self.get_num_of_tokens())
 
     def preprocessing_step1_2(self):
         # Lowercase all words in the training and test corpuses
@@ -72,10 +81,14 @@ class LanguageModel:
     def preprocessing_step3(self):
         # Take the file from trainPreprocessed
         with open('./trainPreprocessed.txt', 'r', encoding='utf8') as f:
-            with open('./trainUnk.txt', 'w') as w:
+            with open('./trainUnk.txt', 'w', encoding='utf8') as w:
                 for line in f:
                     tokens = line.split()
                     for token in tokens:
+                        if token == '<s>':
+                            w.write(token)
+                            w.write(' ')
+                            continue
                         if self.unigramDict[token] == 1:
                             token = '<unk>'
                         w.write(token)
@@ -89,15 +102,15 @@ class LanguageModel:
                 tokens = line.split()
                 for token in tokens:
                     if (token == '<s>'):
+                        self.total_num_of_tokens += 1
                         continue
                     try:
                         self.unigramDict[token] += 1
                     except KeyError:
                         self.unigramDict[token] = 1
-                    # If the token is <s> we dont want to count it as num of tokens
-                    # if (token == '<s>'):
-                    #     continue
+                    # Two counters, first one without <s> and the second with <s>
                     self.num_of_tokens += 1
+                    self.total_num_of_tokens += 1
 
     def create_unigram_with_unk(self):
         with open('./trainUnk.txt', 'r', encoding='utf8') as f:
@@ -110,14 +123,20 @@ class LanguageModel:
                         self.unigramWithUnk[token] += 1
                     except KeyError:
                         self.unigramWithUnk[token] = 1
+                    self.num_of_tokens_unk += 1
 
     def get_num_of_tokens(self):
         num_of_tokens = 0
+        num_of_tokens_unk = 0
         for token in self.unigramDict:
             if token == '<s>':
                 continue
             num_of_tokens += self.unigramDict[token]
-        return num_of_tokens
+        for token in self.unigramWithUnk:
+            if token == '<s>':
+                continue
+            num_of_tokens_unk += self.unigramWithUnk[token]
+        return [num_of_tokens, num_of_tokens_unk]
 
     def preprocessing_step1_2_test(self):
         # Lowercase all words in the training and test corpuses
@@ -162,10 +181,6 @@ class LanguageModel:
                         self.testDict[token] += 1
                     except KeyError:
                         self.testDict[token] = 1
-                    # If the token is <s> we dont want to count it as num of tokens
-                    # if (token == '<s>'):
-                    #     continue
-                    self.num_of_tokens += 1
 
     def percentages_not_found(self):
         # What percentage of tokens and word types did not occur in the training data
@@ -222,6 +237,36 @@ class LanguageModel:
             num_of_tokens_not_found += self.bigram_test[bigram]
             num_of_types_not_found += 1
         return [num_of_tokens_not_found/total_tokens, num_of_types_not_found/total_types]
+
+    def log_probability_unigram(self):
+        # P(i) = c(i)/c(total)
+        # I look forward to hearing your reply
+        p_i = math.log(self.unigramWithUnk['i'] / self.num_of_tokens, 2)
+        p_look = math.log(
+            self.unigramWithUnk['look'] / self.num_of_tokens, 2)
+        p_forward = math.log(
+            self.unigramWithUnk['forward'] / self.num_of_tokens, 2)
+        p_to = math.log(
+            self.unigramWithUnk['to'] / self.num_of_tokens, 2)
+        p_hearing = math.log(
+            self.unigramWithUnk['hearing'] / self.num_of_tokens, 2)
+        p_your = math.log(
+            self.unigramWithUnk['your'] / self.num_of_tokens, 2)
+        p_reply = math.log(
+            self.unigramWithUnk['reply'] / self.num_of_tokens, 2)
+        p_dot = math.log(
+            self.unigramWithUnk['.'] / self.num_of_tokens, 2)
+        p_stop = math.log(
+            self.unigramWithUnk['</s>'] / self.num_of_tokens, 2)
+        print("Log p(i)", p_i)
+        print("Log p(look)", p_look)
+        print("Log p(forward)", p_forward)
+        print("Log p(to)", p_to)
+        print("Log p(hearing)", p_hearing)
+        print("Log p(your)", p_your)
+        print("Log p(reply)", p_reply)
+        print("Log p(.)", p_dot)
+        print("Log p(</s>)", p_stop)
 
 
 if __name__ == "__main__":
