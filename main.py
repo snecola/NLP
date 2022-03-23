@@ -15,6 +15,9 @@ class LanguageModel:
     bigram_training = {}
     bigram_test = {}
 
+    # Bigram with Add-One smoothing
+    bigram_add_one = {}
+
     # Counters for different training data
     # including <s>
     total_num_of_tokens = 0
@@ -38,7 +41,7 @@ class LanguageModel:
         # print('# of unique tokens in the training corpus (including </s> and <unk>) ', len(self.unigramDict)+1)
         # print('# of <s> in unigramDict ', self.unigramDict['<s>'])
         print('# of unique tokens in the training corpus (replaced single instance words with <unk>)', len(
-            self.unigramWithUnk)+1)
+            self.unigramWithUnk))
         # print('# of <s> in unigramWithUnk', self.unigramWithUnk['<s>'])
 
         # Answer to Question 2
@@ -68,6 +71,8 @@ class LanguageModel:
         self.log_probability_unigram()
         print("Bigram:")
         self.log_probability_bigram()
+        print("Bigram Add-One Smoothing")
+        self.log_probability_bigram_add_one()
 
     def preprocessing_step1_2(self):
         # Lowercase all words in the training and test corpuses
@@ -337,6 +342,70 @@ class LanguageModel:
         print("Log p(. | reply)", p_reply_dot)
         print("Log p(</s> | .)", p_dot_stop)
         print("Log probability of this bigram is undefined")
+
+    def log_probability_bigram_add_one(self):
+        vocabulary_size = len(self.unigramWithUnk)+1
+        try:
+            p_s_i = math.log(
+                (self.bigram_training['<s> i'] + 1) / (self.num_of_start + vocabulary_size), 2)
+        except KeyError:
+            p_s_i = 0
+        try:
+            p_i_look = math.log(
+                (self.bigram_training['i look'] + 1) / (self.unigramWithUnk['i'] + vocabulary_size), 2)
+        except KeyError:
+            p_i_look = math.log(
+                (1) / (self.unigramWithUnk['i'] + vocabulary_size), 2)
+        try:
+            p_look_forward = math.log(
+                (self.bigram_training['look forward']+1) / (self.unigramWithUnk['look'] + vocabulary_size), 2)
+        except KeyError:
+            p_look_forward = 0
+        try:
+            p_forward_to = math.log(
+                (self.bigram_training['forward to']+1) / (self.unigramWithUnk['forward'] + vocabulary_size), 2)
+        except KeyError:
+            p_forward_to = 0
+        try:
+            p_to_hearing = math.log(
+                (self.bigram_training['to hearing']+1) / (self.unigramWithUnk['to'] + vocabulary_size), 2)
+        except KeyError:
+            p_to_hearing = 0
+        try:
+            p_hearing_your = math.log(
+                (self.bigram_training['hearing your']+1) / (self.unigramWithUnk['hearing'] + vocabulary_size), 2)
+        except KeyError:
+            p_hearing_your = math.log(
+                (1) / (self.unigramWithUnk['hearing'] + vocabulary_size), 2)
+        try:
+            p_your_reply = math.log(
+                (self.bigram_training['your reply']+1) / (self.unigramWithUnk['your'] + vocabulary_size), 2)
+        except KeyError:
+            p_your_reply = math.log(
+                (1) / (self.unigramWithUnk['your'] + vocabulary_size), 2)
+        try:
+            p_reply_dot = math.log(
+                (self.bigram_training['reply .']+1) / (self.unigramWithUnk['reply'] + vocabulary_size), 2)
+        except KeyError:
+            p_reply_dot = math.log(
+                (1) / (self.unigramWithUnk['reply'] + vocabulary_size), 2)
+        try:
+            p_dot_stop = math.log(
+                (self.bigram_training['. </s>']+1) / (self.unigramWithUnk['.'] + vocabulary_size), 2)
+        except KeyError:
+            p_dot_stop = math.log(
+                (1) / (self.unigramWithUnk['.'] + vocabulary_size), 2)
+        print("Log p(i | <s>)", p_s_i)
+        print("Log p(look | i)", p_i_look)
+        print("Log p(forward | look)", p_look_forward)
+        print("Log p(to | forward)", p_forward_to)
+        print("Log p(hearing | to)", p_to_hearing)
+        print("Log p(your | hearing)", p_hearing_your)
+        print("Log p(reply | your)", p_your_reply)
+        print("Log p(. | reply)", p_reply_dot)
+        print("Log p(</s> | .)", p_dot_stop)
+        print("Log probability of this bigram is", p_s_i+p_i_look+p_look_forward +
+              p_forward_to+p_to_hearing+p_hearing_your+p_your_reply+p_reply_dot+p_dot_stop)
 
 
 if __name__ == "__main__":
