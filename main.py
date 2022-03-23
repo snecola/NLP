@@ -16,10 +16,9 @@ class LanguageModel:
     bigram_training = {}
     bigram_test = {}
 
-    # Bigram with Add-One smoothing
-    bigram_add_one = {}
-
     # Counters for different training data
+    test_num_of_tokens = 0
+    test_num_of_start = 0
     # including <s>
     total_num_of_tokens = 0
     # of <s> since we dont include it in the unigram model
@@ -85,6 +84,9 @@ class LanguageModel:
         self.create_test_unigram_with_unk()
         print("Question 7:")
         self.test_unigram_perplexity()
+        # Bigram without smoothing log(0)
+        print("Bigram Perplexity for test data= undefined")
+        self.test_bigram_add_one_perplexity()
 
     def preprocessing_step1_2(self):
         # Lowercase all words in the training and test corpuses
@@ -149,19 +151,6 @@ class LanguageModel:
                         self.unigram_with_unk[token] = 1
                     self.num_of_tokens_unk += 1
 
-    # def get_num_of_tokens(self):
-    #     num_of_tokens = 0
-    #     num_of_tokens_unk = 0
-    #     for token in self.unigram_dict:
-    #         if token == '<s>':
-    #             continue
-    #         num_of_tokens += self.unigram_dict[token]
-    #     for token in self.unigram_with_unk:
-    #         if token == '<s>':
-    #             continue
-    #         num_of_tokens_unk += self.unigram_with_unk[token]
-    #     return [num_of_tokens, num_of_tokens_unk]
-
     def preprocessing_step1_2_test(self):
         # Lowercase all words in the training and test corpuses
         # Add <s> and </s> to the sentenses
@@ -212,11 +201,13 @@ class LanguageModel:
                 tokens = line.split()
                 for token in tokens:
                     if (token == '<s>'):
+                        self.test_num_of_start += 1
                         continue
                     try:
                         self.test_unigram[token] += 1
                     except KeyError:
                         self.test_unigram[token] = 1
+                    self.test_num_of_tokens += 1
 
     def percentages_not_found(self):
         # What percentage of tokens and word types did not occur in the training data
@@ -438,15 +429,44 @@ class LanguageModel:
         return math.pow(2, (-1)*(avg_log/m))
 
     def test_unigram_perplexity(self):
-        vocab_size = len(self.test_dict)
-        log_sum = 0
-        for token in self.test_dict:
-            if token == '<s>':
-                continue
-            p_token = math.log(
-                self.unigram_with_unk[token] / self.num_of_tokens, 2)
-            log_sum += p_token
-        print("Unigram Perplexity =", self.perplexity(log_sum, vocab_size))
+        log_sums = 0
+        num_of_tokens = 0
+        # For every word in the test data
+        with open('testUnk.txt', 'r', encoding='utf8') as f:
+            for line in f:
+                tokens = line.split()
+                for token in tokens:
+                    if token == '<s>':
+                        continue
+                    # Calculate the log probability for that word
+                    p_token = math.log(
+                        self.unigram_with_unk[token]/self.num_of_tokens, 2)
+                    # Add it to the sum of logs
+                    log_sums += p_token
+                    num_of_tokens += 1
+        print("Unigram Perplexity for test data =",
+              self.perplexity(log_sums, self.test_num_of_tokens))
+
+    def test_bigram_add_one_perplexity(self):
+        log_sums = 0
+        num_of_bigrams = 0
+        self.unigram_with_unk['<s>'] = 90000
+        vocabulary_size = len(self.unigram_with_unk)+1
+        with open('testUnk.txt', 'r', encoding='utf8') as f:
+            for line in f:
+                tokens = line.split()
+                for i in range(1, len(tokens)):
+                    bigram = tokens[i-1] + " " + tokens[i]
+                    num_of_bigrams += 1
+                    try:
+                        p_bigram = math.log((self.bigram_training[bigram] + 1) / (
+                            self.unigram_with_unk[tokens[i-1]] + vocabulary_size), 2)
+                    except KeyError:
+                        p_bigram = math.log(
+                            1 / (self.unigram_with_unk[tokens[i-1]] + vocabulary_size), 2)
+                    log_sums += p_bigram
+        print("Bigram Add-One Smoothing Perplexity for test data =",
+              self.perplexity(log_sums, self.test_num_of_tokens+self.test_num_of_start))
 
 
 if __name__ == "__main__":
